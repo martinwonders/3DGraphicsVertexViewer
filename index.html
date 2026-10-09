@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vertex Data Playground</title>
+<style>
+:root{
+  --ink:#12161c;
+  --paper:#f6f4ee;
+  --panel:#ffffff;
+  --line:#d6d1c4;
+  --line-strong:#b7b1a1;
+  --muted:#5f6672;
+  --accent:#1f6feb;          /* selection / links */
+  --accent-soft:#e5efff;
+  --warn:#b23c17;
+  --warn-soft:#fbe6de;
+  --good:#1f7a4d;
+  --shadow:0 1px 2px rgba(20,22,28,.06),0 6px 20px rgba(20,22,28,.06);
+  --mono:"SFMono-Regular",ui-monospace,"Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  background:var(--paper);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-0.01em}
+h1{font-size:20px}
+h2{font-size:15px}
+h3{font-size:13px;color:var(--muted);font-weight:600}
+a{color:var(--accent)}
+button{font-family:inherit;font-size:13px}
+code,kbd{font-family:var(--mono);font-size:12px}
+
+/* ---------- header ---------- */
+header{
+  padding:12px 18px;
+  border-bottom:1px solid var(--line);
+  background:var(--panel);
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.brand{display:flex;flex-direction:column}
+.brand small{color:var(--muted);font-size:12px}
+.pipeline{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:12px;color:var(--muted);
+  margin-left:auto;
+}
+.pipeline .chip{
+  background:var(--paper);border:1px solid var(--line);
+  padding:4px 9px;border-radius:6px;color:var(--ink);font-weight:550;
+}
+.pipeline .arrow{color:var(--line-strong);font-weight:700}
+
+/* ---------- toolbar ---------- */
+.toolbar{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:9px 18px;border-bottom:1px solid var(--line);background:var(--panel);
+}
+.toolbar .group{display:flex;gap:6px;align-items:center}
+.toolbar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+label.field{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+select,input[type=text],input[type=number]{
+  font-family:inherit;font-size:13px;color:var(--ink);
+  border:1px solid var(--line-strong);border-radius:6px;
+  padding:5px 7px;background:#fff;
+}
+select{padding:5px 24px 5px 8px;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%235f6672'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;}
+.btn{
+  border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+  padding:6px 11px;border-radius:6px;cursor:pointer;font-weight:550;
+  transition:background .12s,border-color .12s;
+}
+.btn:hover{background:var(--paper)}
+.btn:active{background:#eceadf}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#195bc4}
+.btn.small{padding:3px 8px;font-size:12px}
+.btn.tiny{padding:2px 6px;font-size:11px}
+.toggle{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line-strong);border-radius:6px;padding:5px 9px;background:#fff;
+  font-size:12px;user-select:none;
+}
+.toggle input{margin:0}
+.toggle.on{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ---------- layout ---------- */
+main{
+  display:grid;
+  grid-template-columns:minmax(280px,1fr) minmax(420px,1.6fr) minmax(280px,1fr);
+  gap:0;
+  height:calc(100vh - 118px);
+  min-height:520px;
+}
+.col{overflow:auto;padding:12px 14px;border-right:1px solid var(--line);background:var(--paper)}
+.col:last-child{border-right:none}
+.col.center{padding:0;background:#0d1117;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.panelhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.panelhead .row-actions{display:flex;gap:5px}
+
+/* ---------- tables ---------- */
+.tablewrap{border:1px solid var(--line);border-radius:8px;overflow:auto;background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:12px}
+thead th{
+  position:sticky;top:0;background:#efece3;z-index:1;
+  text-align:right;padding:6px 6px;border-bottom:1px solid var(--line);
+  font-weight:600;color:var(--muted);white-space:nowrap;
+}
+thead th.lft{text-align:left}
+tbody td{padding:2px 4px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.sel{background:var(--accent-soft)}
+tbody tr.ref{background:#eef7ff}
+tbody tr.warn-row{background:var(--warn-soft)}
+tbody td.idx{color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+tbody td.lbl{text-align:center}
+tbody td.lbl input{width:34px}
+td input[type=number]{
+  width:58px;border:1px solid transparent;border-radius:4px;padding:3px 4px;
+  background:transparent;text-align:right;font-variant-numeric:tabular-nums;
+}
+td input[type=number]:hover{border-color:var(--line)}
+td input[type=number]:focus{border-color:var(--accent);background:#fff;outline:none}
+td input.narrow{width:44px}
+td input.bad{border-color:var(--warn)!important;background:var(--warn-soft)}
+.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.25);cursor:pointer;padding:0;vertical-align:middle}
+td .cellrow{display:inline-flex;align-items:center;gap:4px;justify-content:flex-end}
+.rowbtn{border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:2px 5px;border-radius:4px}
+.rowbtn:hover{background:#f0eee5;color:var(--warn)}
+.dupflag{font-size:10px;color:var(--warn);font-weight:700;cursor:help}
+.resolve{font-size:11px;color:var(--muted);margin-top:6px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.resolve b{color:var(--ink)}
+
+/* ---------- viewport ---------- */
+#gl{display:block;width:100%;height:100%;flex:1}
+.vp-overlay{position:absolute;inset:0;pointer-events:none}
+.vp-top{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;pointer-events:none}
+.vp-top .cluster{display:flex;gap:6px;flex-wrap:wrap;pointer-events:auto}
+.vp-top .btn,.vp-top .toggle{background:rgba(255,255,255,.92);backdrop-filter:blur(4px)}
+.vp-bottom{position:absolute;left:8px;bottom:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;pointer-events:none}
+.counts{
+  pointer-events:auto;background:rgba(13,17,23,.72);color:#e9edf3;
+  border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 10px;
+  font-size:11px;line-height:1.6;backdrop-filter:blur(4px);
+}
+.counts b{color:#fff;font-variant-numeric:tabular-nums}
+.counts .k{color:#9fb0c4}
+.status{
+  pointer-events:auto;max-width:60%;background:rgba(178,60,23,.94);color:#fff;
+  border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.5;display:none;
+}
+.status.show{display:block}
+.status.stale{background:rgba(180,120,20,.95)}
+.vplabel{position:absolute;transform:translate(-50%,-50%);font-family:var(--mono);
+  font-size:11px;color:#fff;background:rgba(13,17,23,.7);padding:1px 5px;border-radius:4px;
+  pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.15)}
+.vplabel.lbl{font-weight:700;letter-spacing:.02em;color:#fff8e7;
+  background:rgba(180,120,20,.82);border-color:rgba(255,220,150,.5)}
+.vplabel.lbl-sel{background:rgba(31,111,235,.92);color:#fff;border-color:rgba(180,210,255,.7)}
+.winding-note{position:absolute;font-size:11px;color:#fff;background:rgba(31,111,235,.9);
+  padding:2px 6px;border-radius:5px;pointer-events:none;transform:translate(-50%,-50%);white-space:nowrap}
+
+/* ---------- below-the-fold ---------- */
+.below{padding:16px 18px;border-top:1px solid var(--line);background:var(--panel)}
+.below .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start}
+@media(max-width:900px){.below .grid{grid-template-columns:1fr}}
+details.card{border:1px solid var(--line);border-radius:8px;background:var(--paper);margin-bottom:12px;overflow:hidden}
+details.card>summary{cursor:pointer;padding:10px 12px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+details.card[open]>summary::before{transform:rotate(90deg)}
+.card .body{padding:0 12px 12px}
+.exp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.exp-list li{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:7px}
+.exp-list .n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:600}
+.exp-list .txt{flex:1}
+.exp-list .txt p{margin:0 0 6px}
+.exp-list .go{flex:none}
+pre.cpp{margin:0;padding:12px;background:#0d1117;color:#d7dde6;border-radius:8px;overflow:auto;font-size:12px;line-height:1.55;max-height:340px}
+pre.cpp .kw{color:#7aa2f7}
+pre.cpp .ty{color:#7dcfff}
+pre.cpp .nm{color:#c0caf5}
+pre.cpp .num{color:#ff9e64}
+pre.cpp .cm{color:#5c6370;font-style:italic}
+.cpp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.note{font-size:12px;color:var(--muted)}
+.kbd{border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;padding:1px 5px;background:#fff;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.footnote{font-size:12px;color:var(--muted);padding:10px 18px}
+.hint{font-size:11px;color:var(--muted);margin-top:4px}
+.movealbl{font-size:11px}
+.toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:8px 14px;border-radius:8px;font-size:12px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Vertex Data Playground</h1>
+    <small>Edit the arrays. Watch the triangles. See the pixels.</small>
+  </div>
+  <div class="pipeline" aria-hidden="true">
+    <span class="chip">Vertex data</span><span class="arrow">+</span>
+    <span class="chip">Index data</span><span class="arrow">→</span>
+    <span class="chip">Triangles</span><span class="arrow">→</span>
+    <span class="chip">Pixels</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <label class="field">Preset
+    <select id="presetSel" aria-label="Choose a preset model">
+      <optgroup label="Introduction">
+        <option value="triangle">RGB triangle</option>
+      </optgroup>
+      <optgroup label="Cube">
+        <option value="cubeShared">Cube — shared per-vertex colours (8 records)</option>
+        <option value="cubeFaces">Cube — per-face colours (24 records)</option>
+        <option value="tube">Hollow square tube (double-sided)</option>
+      </optgroup>
+      <optgroup label="Octahedron">
+        <option value="octaShared">Octahedron — shared colours</option>
+        <option value="octaFaces">Octahedron — per-face colours</option>
+      </optgroup>
+      <optgroup label="Tetrahedron">
+        <option value="tetraShared">Tetrahedron — shared colours</option>
+        <option value="tetraFaces">Tetrahedron — per-face colours</option>
+      </optgroup>
+    </select>
+  </label>
+  <button class="btn small" id="reloadPreset" title="Reload the current preset">Reset preset</button>
+  <div class="sep"></div>
+  <div class="group">
+    <button class="btn small" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button>
+    <button class="btn small" id="redoBtn" title="Redo (Ctrl+Y)">↷ Redo</button>
+  </div>
+  <div class="sep"></div>
+  <div class="group" role="group" aria-label="Viewport display toggles">
+    <label class="toggle on" id="tgCull"><input type="checkbox" checked>Back-face culling</label>
+    <label class="toggle" id="tgAxes"><input type="checkbox">Axes</label>
+    <label class="toggle" id="tgMarkers"><input type="checkbox">Vertex markers</label>
+    <label class="toggle" id="tgLabels"><input type="checkbox">Index labels</label>
+    <label class="toggle" id="tgWire"><input type="checkbox">Wireframe</label>
+    <label class="toggle" id="tgRotate"><input type="checkbox">Auto-rotate</label>
+  </div>
+</div>
+
+<main>
+  <!-- LEFT: vertices -->
+  <section class="col" aria-label="Vertex editor">
+    <div class="panelhead">
+      <h2>Vertex data <span class="note">sc_VertexData[]</span></h2>
+      <div class="row-actions">
+        <button class="btn tiny" id="addVertex">+ Vertex</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table id="vtable">
+        <thead>
+          <tr>
+            <th class="lft">#</th><th>Lbl</th>
+            <th>X</th><th>Y</th><th>Z</th>
+            <th>R</th><th>G</th><th>B</th>
+            <th></th><th></th>
+          </tr>
+        </thead>
+        <tbody id="vbody"></tbody>
+      </table>
+    </div>
+    <label class="toggle movealbl" id="tgMoveAll" style="margin-top:8px">
+      <input type="checkbox">Move all vertices at this position
+    </label>
+    <p class="hint">Off by default. When on, editing one position moves every record that currently shares it — handy for demonstrating split vertices.</p>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--accent)"></span>selected</span>
+      <span><span class="sw" style="background:#eef7ff;border:1px solid var(--line)"></span>referenced by selected triangle</span>
+    </div>
+  </section>
+
+  <!-- CENTRE: viewport -->
+  <section class="col center" aria-label="3D viewport">
+    <canvas id="gl" tabindex="0" aria-label="3D view of the edited model"></canvas>
+    <div class="vp-overlay" id="vpOverlay"></div>
+    <div class="vp-top">
+      <div class="cluster">
+        <button class="btn small" id="btnFront">Front view</button>
+        <button class="btn small" id="btnReset">Reset view</button>
+        <button class="btn small" id="btnFit">Fit model</button>
+      </div>
+    </div>
+    <div class="vp-bottom">
+      <div class="counts" id="counts"></div>
+      <div class="status" id="vpStatus" role="status"></div>
+    </div>
+  </section>
+
+  <!-- RIGHT: indices -->
+  <section class="col" aria-label="Triangle and index editor">
+    <div class="panelhead">
+      <h2>Index data <span class="note">sc_IndexData[]</span></h2>
+      <div class="row-actions">
+        <button class="btn tiny" id="addTri">+ Triangle</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table id="ttable">
+        <thead>
+          <tr><th class="lft">Tri</th><th>i0</th><th>i1</th><th>i2</th><th></th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="row-actions" style="margin-top:8px;flex-wrap:wrap;gap:6px">
+      <button class="btn small" id="revWind" disabled>Reverse winding</button>
+      <label class="toggle" id="tgIsolate"><input type="checkbox">Isolate selected triangle</label>
+    </div>
+    <div class="resolve" id="triResolve">Select a triangle to see how its indices resolve to vertices.</div>
+    <div class="legend">
+      <span>⟲ front face (anticlockwise, visible)</span>
+    </div>
+  </section>
+</main>
+
+<!-- BELOW THE FOLD -->
+<div class="below">
+  <div class="grid">
+    <div>
+      <h2 style="margin-bottom:10px">Guided experiments</h2>
+      <p class="note" style="margin:0 0 10px">Each button selects the relevant data and tells you what to do — it won't do the exercise for you.</p>
+      <ol class="exp-list" id="expList"></ol>
+    </div>
+    <div>
+      <details class="card">
+        <summary>How this works</summary>
+        <div class="body">
+          <p class="note">A <b>vertex</b> is six floats: position <code>x, y, z</code> and colour <code>r, g, b</code>. <code>sc_VertexData[]</code> holds these records; indices start at <b>0</b>.</p>
+          <p class="note"><code>sc_IndexData[]</code> holds unsigned 16-bit indices. Every three consecutive indices name one triangle, and each index points at a whole vertex record — position <em>and</em> colour.</p>
+          <p class="note"><b>Winding:</b> viewed from the front, the three corners run anticlockwise. That side is the front face; the back face is culled by default, so a triangle wound the wrong way vanishes from this side.</p>
+          <p class="note"><b>Same cube, two ways:</b> 8 corner positions never changes — but a cube with independent per-face colours needs <b>24 vertex records</b> (each corner appears three times with different colours), whereas shared per-vertex colours need only <b>8 records</b> and let colour interpolate across each triangle.</p>
+          <p class="note">Right-handed axes: <code>+X</code> right, <code>+Y</code> up, <code>+Z</code> towards you.</p>
+        </div>
+      </details>
+
+      <details class="card" id="cppCard">
+        <summary>C++ view — generated from the editors</summary>
+        <div class="body">
+          <div class="cpp-head">
+            <span class="note">Stays in sync with your edits.</span>
+            <button class="btn small" id="copyCpp">Copy</button>
+          </div>
+          <pre class="cpp" id="cppOut"></pre>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary>Controls &amp; keyboard</summary>
+        <div class="body">
+          <p class="note">Orbit: drag in the viewport. Zoom: scroll or pinch. <span class="kbd">Tab</span> into any table and edit with the keyboard. <span class="kbd">Ctrl</span>+<span class="kbd">Z</span> / <span class="kbd">Ctrl</span>+<span class="kbd">Y</span> undo and redo. Editing never moves the camera; use <b>Fit model</b> when you want it reframed.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<p class="footnote">
+  Runs entirely in your browser — no backend, no build step. Uses Three.js from a pinned CDN, so an internet connection is required the first time it loads.
+  Open by double-clicking the file, or serve the folder and visit it. Best viewed on a laptop-width screen.
+</p>
+
+<div class="toast" id="toast"></div>
+
+<!-- Three.js, pinned -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   Vertex Data Playground
+   - Editable sc_VertexData[] and sc_IndexData[]
+   - Real depth-tested WebGL rendering via Three.js
+   - Selection overlays, validation, presets, undo/redo
+   ============================================================ */
+
+/* ---------- small helpers ---------- */
+const $ = s => document.querySelector(s);
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const U16_MAX = 65535;
+const toHex = (r,g,b)=>'#'+[r,g,b].map(v=>{const n=Math.round(clamp01(v)*255);return n.toString(16).padStart(2,'0');}).join('');
+const fromHex = h=>{const n=parseInt(h.slice(1),16);return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255];};
+const fmt = v => {
+  if(!isFinite(v)) return String(v);
+  const s = (Math.round(v*1000)/1000).toString();
+  return s;
+};
+const nearlyEq = (a,b)=>Math.abs(a-b)<1e-6;
+const samePos = (a,b)=>nearlyEq(a.x,b.x)&&nearlyEq(a.y,b.y)&&nearlyEq(a.z,b.z);
+
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1600);
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+// A vertex: {label, x,y,z, r,g,b}
+// A triangle: [i0,i1,i2]
+let state = { verts:[], tris:[] };
+let selVert = -1;   // selected vertex row index
+let selTri  = -1;   // selected triangle row index
+let lastValid = null;  // last geometry that rendered cleanly (positions+colors+indices)
+
+const flags = {
+  cull:true, axes:false, markers:false, labels:false, wire:false, rotate:false,
+  moveAll:false, isolate:false
+};
+
+/* ---------- undo / redo ---------- */
+const undoStack=[], redoStack=[];
+function snapshot(){ return JSON.stringify(state); }
+function pushUndo(){ undoStack.push(snapshot()); if(undoStack.length>200)undoStack.shift(); redoStack.length=0; updateUndoButtons(); }
+function restore(s){ state = JSON.parse(s); clampSelections(); rebuildAll(); }
+function undo(){ if(!undoStack.length)return; redoStack.push(snapshot()); restore(undoStack.pop()); updateUndoButtons(); }
+function redo(){ if(!redoStack.length)return; undoStack.push(snapshot()); restore(redoStack.pop()); updateUndoButtons(); }
+function updateUndoButtons(){ $('#undoBtn').disabled=!undoStack.length; $('#redoBtn').disabled=!redoStack.length; }
+function clampSelections(){
+  if(selVert>=state.verts.length) selVert=state.verts.length-1;
+  if(selTri>=state.tris.length) selTri=state.tris.length-1;
+}
+
+/* ============================================================
+   PRESETS
+   ============================================================ */
+// Shared-colour cube — exact data from the brief.
+const CUBE_SHARED_VERTS = [
+  ['A',-1, 1, 1, 1,   0,   0  ],
+  ['B',-1,-1, 1, 0,   1,   0  ],
+  ['C', 1,-1, 1, 0,   0,   1  ],
+  ['D', 1, 1, 1, 1,   1,   0  ],
+  ['E', 1, 1,-1, 1,   0,   1  ],
+  ['F', 1,-1,-1, 0,   1,   1  ],
+  ['G',-1,-1,-1, 0.5, 0,   0.7],
+  ['H',-1, 1,-1, 0,   0.8, 0.2],
+].map(a=>({label:a[0],x:a[1],y:a[2],z:a[3],r:a[4],g:a[5],b:a[6]}));
+
+// Triangle list, in the order given (front,right,back,left,top,bottom).
+const CUBE_TRIS = [
+  [0,1,2],[0,2,3],   // front
+  [5,3,2],[5,4,3],   // right
+  [4,5,6],[4,6,7],   // back
+  [7,6,1],[7,1,0],   // left
+  [3,7,0],[3,4,7],   // top
+  [1,6,5],[1,5,2],   // bottom
+];
+const FACE_NAMES = ['front','right','back','left','top','bottom'];
+const FACE_COLORS = [
+  [0.85,0.20,0.20], // front  red
+  [0.20,0.55,0.90], // right  blue
+  [0.30,0.75,0.35], // back   green
+  [0.95,0.75,0.20], // left   yellow
+  [0.65,0.35,0.85], // top    purple
+  [0.20,0.75,0.75], // bottom teal
+];
+
+function clone(v){return JSON.parse(JSON.stringify(v));}
+
+// Build the split-vertex (24 record) cube, preserving triangle order.
+// Each face (a pair of triangles) gets its own 4 records with one flat colour.
+function buildFaceCube(){
+  const verts=[], tris=[];
+  for(let f=0; f<6; f++){
+    const t0=CUBE_TRIS[f*2], t1=CUBE_TRIS[f*2+1];
+    // unique corner indices used by this face, keep first-seen order
+    const order=[]; [...t0,...t1].forEach(i=>{if(!order.includes(i))order.push(i);});
+    const map={}; const base=verts.length;
+    order.forEach((origIdx,k)=>{
+      const src=CUBE_SHARED_VERTS[origIdx];
+      const col=FACE_COLORS[f];
+      verts.push({label:src.label, x:src.x,y:src.y,z:src.z, r:col[0],g:col[1],b:col[2]});
+      map[origIdx]=base+k;
+    });
+    tris.push([map[t0[0]],map[t0[1]],map[t0[2]]]);
+    tris.push([map[t1[0]],map[t1[1]],map[t1[2]]]);
+  }
+  return {verts,tris};
+}
+
+// Hollow tube: side faces of the split cube (right,back,left,front) — omit top & bottom.
+// Each triangle added again reversed so the interior is visible with culling on.
+function buildTube(){
+  const fc=buildFaceCube();
+  // face f uses verts [f*4 .. f*4+3] and tris [f*2, f*2+1]
+  const keep=[0,1,2,3]; // front,right,back,left  (omit top=4, bottom=5)
+  const verts=[], tris=[];
+  const remap={};
+  keep.forEach(f=>{
+    for(let k=0;k<4;k++){ const oi=f*4+k; remap[oi]=verts.length; verts.push(clone(fc.verts[oi])); }
+  });
+  keep.forEach(f=>{
+    [fc.tris[f*2], fc.tris[f*2+1]].forEach(t=>{
+      const a=remap[t[0]],b=remap[t[1]],c=remap[t[2]];
+      tris.push([a,b,c]);        // outward
+      tris.push([a,c,b]);        // reversed → inward-facing duplicate
+    });
+  });
+  return {verts,tris};
+}
+
+function buildTriangle(){
+  return {
+    verts:[
+      {label:'A', x:0, y:1.2, z:0, r:1,g:0,b:0},
+      {label:'B', x:-1.1, y:-0.9, z:0, r:0,g:1,b:0},
+      {label:'C', x:1.1, y:-0.9, z:0, r:0,g:0,b:1},
+    ],
+    tris:[[0,1,2]]
+  };
+}
+
+// A near-blank canvas for the "build a pyramid from scratch" exercise.
+// Seeds ONLY the apex, so there's an anchor in the viewport — the four base
+// corners and every triangle are left for the student to add.
+function buildPyramidStart(){
+  return {
+    verts:[
+      {label:'Apex', x:0, y:1.2, z:0, r:1, g:0.85, b:0.2},
+    ],
+    tris:[]
+  };
+}
+
+// Octahedron: corners at ±1 on each axis.
+function buildOcta(perFace){
+  const P=[
+    ['+X', 1,0,0],['-X',-1,0,0],
+    ['+Y', 0,1,0],['-Y',0,-1,0],
+    ['+Z', 0,0,1],['-Z',0,0,-1],
+  ];
+  // 8 faces, outward (anticlockwise seen from outside)
+  const F=[
+    [4,0,2],[4,2,1],[4,1,3],[4,3,0], // +Z cap around
+    [5,2,0],[5,1,2],[5,3,1],[5,0,3], // -Z cap around
+  ];
+  const cols=[
+    [0.90,0.30,0.30],[0.30,0.60,0.95],[0.35,0.80,0.40],[0.95,0.80,0.25],
+    [0.65,0.40,0.85],[0.25,0.80,0.80],[0.95,0.55,0.25],[0.55,0.55,0.60],
+  ];
+  if(!perFace){
+    const verts=P.map((p,i)=>{
+      // give each axis vertex a distinct colour so interpolation is visible
+      const c=[[1,0.2,0.2],[0.2,1,0.4],[0.3,0.5,1],[1,0.9,0.2],[0.8,0.3,1],[0.2,0.9,0.9]][i];
+      return {label:p[0],x:p[1],y:p[2],z:p[3],r:c[0],g:c[1],b:c[2]};
+    });
+    return {verts, tris:F.map(t=>t.slice())};
+  }
+  const verts=[],tris=[];
+  F.forEach((t,fi)=>{
+    const base=verts.length, c=cols[fi];
+    t.forEach(pi=>{const p=P[pi];verts.push({label:p[0],x:p[1],y:p[2],z:p[3],r:c[0],g:c[1],b:c[2]});});
+    tris.push([base,base+1,base+2]);
+  });
+  return {verts,tris};
+}
+
+// Tetrahedron from four alternating cube corners.
+function buildTetra(perFace){
+  // alternating corners of a cube of side 2 centred at origin
+  const P=[
+    ['P0', 1, 1, 1],
+    ['P1', 1,-1,-1],
+    ['P2',-1, 1,-1],
+    ['P3',-1,-1, 1],
+  ];
+  // outward-facing triangles (verified anticlockwise from outside)
+  const F=[
+    [0,1,2],
+    [0,3,1],
+    [0,2,3],
+    [1,3,2],
+  ];
+  const cols=[[0.90,0.30,0.30],[0.30,0.60,0.95],[0.35,0.80,0.40],[0.95,0.80,0.25]];
+  if(!perFace){
+    const verts=P.map((p,i)=>{
+      const c=[[1,0.25,0.25],[0.25,1,0.45],[0.3,0.55,1],[1,0.9,0.25]][i];
+      return {label:p[0],x:p[1],y:p[2],z:p[3],r:c[0],g:c[1],b:c[2]};
+    });
+    return {verts, tris:F.map(t=>t.slice())};
+  }
+  const verts=[],tris=[];
+  F.forEach((t,fi)=>{
+    const base=verts.length,c=cols[fi];
+    t.forEach(pi=>{const p=P[pi];verts.push({label:p[0],x:p[1],y:p[2],z:p[3],r:c[0],g:c[1],b:c[2]});});
+    tris.push([base,base+1,base+2]);
+  });
+  return {verts,tris};
+}
+
+const PRESETS = {
+  triangle:  ()=>buildTriangle(),
+  cubeShared:()=>({verts:clone(CUBE_SHARED_VERTS), tris:clone(CUBE_TRIS)}),
+  cubeFaces: ()=>buildFaceCube(),
+  tube:      ()=>buildTube(),
+  octaShared:()=>buildOcta(false),
+  octaFaces: ()=>buildOcta(true),
+  tetraShared:()=>buildTetra(false),
+  tetraFaces: ()=>buildTetra(true),
+};
+
+function loadPreset(key, keepView){
+  const p = PRESETS[key](); 
+  state = { verts:p.verts, tris:p.tris };
+  selVert=-1; selTri=-1;
+  undoStack.length=0; redoStack.length=0; updateUndoButtons();
+  rebuildAll();
+  if(!keepView) fitModel();
+}
+
+// Load a blank/near-blank canvas for a build-it-yourself exercise. Not a
+// dropdown preset — clears the preset selection so it's clear the student is
+// now on their own. Turns on markers + labels so new vertices are visible.
+function startExercise(builder){
+  const p = builder();
+  state = { verts:p.verts, tris:p.tris };
+  selVert=-1; selTri=-1;
+  undoStack.length=0; redoStack.length=0; updateUndoButtons();
+  flags.markers=true; flags.labels=true; syncToggleUI();
+  rebuildAll();
+  // Frame a comfortable working volume (about ±1.5) rather than the lone apex,
+  // so base corners the student adds land inside the view. Camera then stays put
+  // while they edit — they can hit "Fit model" any time.
+  modelYaw=0; applyYaw();
+  camera.up.set(0,1,0);
+  controls.target.set(0,0,0);
+  camera.position.set(0,0,7);
+  camera.near=0.05; camera.far=200; camera.updateProjectionMatrix();
+  camera.lookAt(0,0,0);
+  controls.sync(); controls.update();
+}
+
+/* ============================================================
+   VALIDATION
+   ============================================================ */
+// Returns {vertErrors: Map(rowIdx->{fields:Set}), triErrors: Map, messages:[...], ok:bool}
+function validate(){
+  const vertErrors=new Map(), triErrors=new Map(), messages=[];
+  state.verts.forEach((v,i)=>{
+    const bad=new Set();
+    ['x','y','z'].forEach(f=>{ if(!isFinite(v[f])) bad.add(f); });
+    ['r','g','b'].forEach(f=>{ if(!isFinite(v[f])||v[f]<0||v[f]>1) bad.add(f); });
+    if(bad.size){ vertErrors.set(i,bad);
+      messages.push(`Vertex ${i}: ${[...bad].map(f=>f.toUpperCase()).join(', ')} out of range or not a number.`);
+    }
+  });
+  const n=state.verts.length;
+  state.tris.forEach((t,ti)=>{
+    const bad=new Set(); let note='';
+    t.forEach((idx,slot)=>{
+      if(!Number.isInteger(idx)){ bad.add(slot); }
+      else if(idx<0||idx>=n){ bad.add(slot); }
+      else if(idx>U16_MAX){ bad.add(slot); }
+    });
+    if(bad.size){
+      triErrors.set(ti,{slots:bad});
+      messages.push(`Triangle ${ti}: index ${[...bad].map(s=>t[s]).join(', ')} is not a valid vertex (0…${Math.max(0,n-1)}, integer, ≤ ${U16_MAX}).`);
+    } else {
+      // structural warnings (not fatal)
+      if(t[0]===t[1]||t[1]===t[2]||t[0]===t[2]){
+        note='repeated index → degenerate (zero-area) triangle';
+      } else {
+        const a=state.verts[t[0]],b=state.verts[t[1]],c=state.verts[t[2]];
+        if([a,b,c].every(v=>['x','y','z'].every(f=>isFinite(v[f])))){
+          const area=triArea(a,b,c);
+          if(area<1e-9) note='zero-area triangle (collinear vertices)';
+        }
+      }
+      if(note){ triErrors.set(ti,{warn:note}); messages.push(`Triangle ${ti}: ${note}.`); }
+    }
+  });
+  const fatal = [...vertErrors.keys()].length>0 || [...triErrors.values()].some(e=>e.slots);
+  return {vertErrors, triErrors, messages, ok:!fatal};
+}
+function triArea(a,b,c){
+  const ux=b.x-a.x,uy=b.y-a.y,uz=b.z-a.z;
+  const vx=c.x-a.x,vy=c.y-a.y,vz=c.z-a.z;
+  const cx=uy*vz-uz*vy, cy=uz*vx-ux*vz, cz=ux*vy-uy*vx;
+  return 0.5*Math.sqrt(cx*cx+cy*cy+cz*cz);
+}
+
+/* ============================================================
+   POSITION GROUPING (split-vertex awareness)
+   ============================================================ */
+// Map each vertex row -> list of rows sharing its exact position.
+function positionGroups(){
+  const groups=[]; const of=new Array(state.verts.length).fill(-1);
+  state.verts.forEach((v,i)=>{
+    if(!['x','y','z'].every(f=>isFinite(v[f]))) { of[i]=-2; return; }
+    let g=groups.find(gr=>samePos(state.verts[gr.rows[0]],v));
+    if(!g){ g={rows:[]}; groups.push(g); }
+    g.rows.push(i); of[i]=groups.indexOf(g);
+  });
+  return {groups, of};
+}
+function uniquePositionCount(){
+  return positionGroups().groups.length;
+}
+
+/* ============================================================
+   THREE.JS SCENE
+   ============================================================ */
+let renderer, scene, camera, controls;
+let solidMesh, wireMesh, backHelper;
+let markerGroup, axesGroup, selVertMarker, triOutline, triFillHelper, windingArrows, overlayPivot;
+const canvas = $('#gl');
+
+function initThree(){
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setClearColor(0x0d1117,1);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
+  camera.position.set(3.5,3,5);
+
+  controls = new OrbitControls(camera, canvas);
+
+  // solid mesh (vertex-coloured, unlit)
+  const mat = new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.FrontSide});
+  solidMesh = new THREE.Mesh(new THREE.BufferGeometry(), mat);
+  scene.add(solidMesh);
+
+  // wireframe overlay
+  wireMesh = new THREE.LineSegments(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:0.45}));
+  wireMesh.visible=false; scene.add(wireMesh);
+
+  markerGroup = new THREE.Group(); scene.add(markerGroup);
+  axesGroup = buildAxes(); axesGroup.visible=false; scene.add(axesGroup);
+
+  // Overlays whose *positions* (not geometry) hold model coordinates live inside
+  // this origin pivot, so the shared yaw orbits them correctly with the model.
+  overlayPivot = new THREE.Group(); scene.add(overlayPivot);
+
+  // selected-vertex marker
+  selVertMarker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06,16,12),
+    new THREE.MeshBasicMaterial({color:0x1f6feb}));
+  selVertMarker.visible=false; overlayPivot.add(selVertMarker);
+
+  // triangle outline (selection) — geometry is in model space, so it can rotate itself
+  triOutline = new THREE.LineSegments(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:0x1f6feb, depthTest:false, transparent:true, linewidth:2}));
+  triOutline.renderOrder=10; triOutline.visible=false; scene.add(triOutline);
+
+  // winding arrows: cones positioned in model space, so parent to the pivot
+  windingArrows = new THREE.Group(); windingArrows.renderOrder=11; overlayPivot.add(windingArrows);
+
+  resize();
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('click', onPick);
+  animate();
+}
+
+function buildAxes(){
+  const g=new THREE.Group();
+  const mk=(dir,color)=>{
+    const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),dir.clone().multiplyScalar(2.4)]);
+    g.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color})));
+    const cone=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.16,12),new THREE.MeshBasicMaterial({color}));
+    cone.position.copy(dir.clone().multiplyScalar(2.4));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+    g.add(cone);
+    return dir;
+  };
+  mk(new THREE.Vector3(1,0,0),0xff5c5c); // X red
+  mk(new THREE.Vector3(0,1,0),0x5cff8a); // Y green
+  mk(new THREE.Vector3(0,0,1),0x5c9bff); // Z blue
+  return g;
+}
+
+function resize(){
+  const w=canvas.clientWidth||canvas.parentElement.clientWidth;
+  const h=canvas.clientHeight||canvas.parentElement.clientHeight;
+  if(w===0||h===0) return;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+
+let _last=0, modelYaw=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-_last)/1000||0; _last=t;
+  if(flags.rotate){ modelYaw+=dt*0.5; }
+  applyYaw();
+  controls.update();
+  renderer.render(scene,camera);
+  updateHTMLLabels();
+}
+// Every object that lives in model space shares the same yaw so overlays stay
+// glued to the rendered surface. selVertMarker sits inside markerGroup's pivot
+// pattern via its own position + the shared yaw applied to a parent-less object,
+// so we rotate its position vector explicitly.
+function applyYaw(){
+  // Geometry-in-model-space objects rotate themselves; position-based overlays
+  // rotate via their shared origin pivot.
+  [solidMesh, wireMesh, markerGroup, triOutline, overlayPivot].forEach(o=>{ if(o) o.rotation.y=modelYaw; });
+}
+
+/* ---------- build Three geometry from state ---------- */
+function buildGeometry(){
+  const v = validate();
+  paintValidation(v);
+  renderCounts();
+  renderCpp();
+
+  if(!v.ok){
+    showStatus(v.messages[0] + (v.messages.length>1?`  (+${v.messages.length-1} more)`:'') , true);
+    // keep last valid render
+    return;
+  }
+  // filter out degenerate tris from the *drawn* set but keep them in the table
+  const drawTris = state.tris.filter(t=>{
+    if(t[0]===t[1]||t[1]===t[2]||t[0]===t[2]) return false;
+    return true;
+  });
+
+  const positions=[], colors=[];
+  const src = state.verts;
+  const useTris = flags.isolate && selTri>=0 && selTri<state.tris.length ? [state.tris[selTri]] : drawTris;
+
+  useTris.forEach(t=>{
+    t.forEach(idx=>{
+      const vv=src[idx];
+      positions.push(vv.x,vv.y,vv.z);
+      colors.push(vv.r,vv.g,vv.b);
+    });
+  });
+
+  const geo=solidMesh.geometry;
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+  geo.computeVertexNormals();
+  geo.attributes.position.needsUpdate=true;
+
+  solidMesh.material.side = flags.cull ? THREE.FrontSide : THREE.DoubleSide;
+
+  // wireframe
+  const wgeo=wireMesh.geometry;
+  const wpos=[];
+  useTris.forEach(t=>{
+    const a=src[t[0]],b=src[t[1]],c=src[t[2]];
+    wpos.push(a.x,a.y,a.z, b.x,b.y,b.z);
+    wpos.push(b.x,b.y,b.z, c.x,c.y,c.z);
+    wpos.push(c.x,c.y,c.z, a.x,a.y,a.z);
+  });
+  wgeo.setAttribute('position', new THREE.Float32BufferAttribute(wpos,3));
+  wireMesh.visible = flags.wire;
+
+  hideStatus();
+  // record last valid
+  lastValid = true;
+  updateSelectionOverlays();
+}
+
+/* ---------- markers & labels ---------- */
+function rebuildMarkers(){
+  markerGroup.clear();
+  if(!flags.markers && !flags.labels) return;
+  state.verts.forEach((v,i)=>{
+    if(!['x','y','z'].every(f=>isFinite(v[f]))) return;
+    if(flags.markers){
+      const m=new THREE.Mesh(new THREE.SphereGeometry(0.04,10,8),
+        new THREE.MeshBasicMaterial({color:0xffffff}));
+      m.position.set(v.x,v.y,v.z);
+      markerGroup.add(m);
+    }
+  });
+}
+
+/* ---------- selection overlays ---------- */
+function updateSelectionOverlays(){
+  // selected vertex
+  if(selVert>=0 && selVert<state.verts.length){
+    const v=state.verts[selVert];
+    if(['x','y','z'].every(f=>isFinite(v[f]))){
+      selVertMarker.position.set(v.x,v.y,v.z);
+      selVertMarker.visible=true;
+    } else selVertMarker.visible=false;
+  } else selVertMarker.visible=false;
+
+  // selected triangle outline + winding arrows
+  windingArrows.clear();
+  if(selTri>=0 && selTri<state.tris.length){
+    const t=state.tris[selTri];
+    const ok = t.every(idx=>Number.isInteger(idx)&&idx>=0&&idx<state.verts.length)
+               && t.every(idx=>['x','y','z'].every(f=>isFinite(state.verts[idx][f])));
+    if(ok){
+      const a=state.verts[t[0]],b=state.verts[t[1]],c=state.verts[t[2]];
+      const pts=[a,b,c].map(p=>new THREE.Vector3(p.x,p.y,p.z));
+      // outline as loop
+      const loop=[pts[0],pts[1], pts[1],pts[2], pts[2],pts[0]];
+      triOutline.geometry.setFromPoints(loop);
+      triOutline.visible=true;
+      // winding arrows along a→b→c
+      buildWindingArrows(pts);
+    } else { triOutline.visible=false; }
+  } else { triOutline.visible=false; }
+}
+
+function buildWindingArrows(pts){
+  // small cones nudged slightly toward the triangle centroid & along the normal
+  const centroid=new THREE.Vector3().add(pts[0]).add(pts[1]).add(pts[2]).multiplyScalar(1/3);
+  const n=new THREE.Vector3().subVectors(pts[1],pts[0]).cross(new THREE.Vector3().subVectors(pts[2],pts[0])).normalize();
+  const lift=n.clone().multiplyScalar(0.02);
+  for(let e=0;e<3;e++){
+    const p0=pts[e], p1=pts[(e+1)%3];
+    const mid=new THREE.Vector3().addVectors(p0,p1).multiplyScalar(0.5).add(lift);
+    // pull slightly toward centroid so arrows sit inside the face
+    mid.lerp(centroid,0.12);
+    const dir=new THREE.Vector3().subVectors(p1,p0).normalize();
+    const cone=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.14,10),
+      new THREE.MeshBasicMaterial({color:0x1f6feb, depthTest:false}));
+    cone.renderOrder=12;
+    cone.position.copy(mid);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+    windingArrows.add(cone);
+  }
+}
+
+/* ---------- HTML overlay labels (index labels + winding note) ---------- */
+function updateHTMLLabels(){
+  const ov=$('#vpOverlay');
+  // reuse pool
+  if(!updateHTMLLabels._pool) updateHTMLLabels._pool=[];
+  const pool=updateHTMLLabels._pool;
+  let used=0;
+  const project=(x,y,z)=>{
+    const v=new THREE.Vector3(x,y,z);
+    // apply auto-rotate
+    v.applyAxisAngle(new THREE.Vector3(0,1,0), modelYaw);
+    v.project(camera);
+    return {x:(v.x*0.5+0.5)*canvas.clientWidth, y:(-v.y*0.5+0.5)*canvas.clientHeight, z:v.z};
+  };
+  const put=(text,x,y,cls)=>{
+    let el=pool[used];
+    if(!el){ el=document.createElement('div'); el.className='vplabel'; ov.appendChild(el); pool[used]=el; }
+    el.className=cls||'vplabel';
+    el.textContent=text; el.style.left=x+'px'; el.style.top=y+'px'; el.style.display='block';
+    used++;
+  };
+  if(flags.labels){
+    state.verts.forEach((v,i)=>{
+      if(!['x','y','z'].every(f=>isFinite(v[f]))) return;
+      const p=project(v.x,v.y,v.z);
+      if(p.z>1||p.z<-1) return;
+      put(String(i), p.x, p.y-13);
+    });
+  }
+  // When markers are shown, label each with its allocated Lbl (A, B, C…).
+  // Records sharing a position are fanned out slightly so every name is legible.
+  if(flags.markers){
+    const seen={}; // key -> how many already placed at this projected spot
+    state.verts.forEach((v,i)=>{
+      if(!v.label) return;
+      if(!['x','y','z'].every(f=>isFinite(v[f]))) return;
+      const p=project(v.x,v.y,v.z);
+      if(p.z>1||p.z<-1) return;
+      const key=`${v.x.toFixed(3)},${v.y.toFixed(3)},${v.z.toFixed(3)}`;
+      const n=seen[key]||0; seen[key]=n+1;
+      // first sits just below the marker; extras step down-right so they don't overprint
+      const dx = n===0 ? 0 : 13*n;
+      const dy = 15 + (n===0 ? 0 : 13*n);
+      put(v.label, p.x+dx, p.y+dy, 'vplabel lbl'+(i===selVert?' lbl-sel':''));
+    });
+  }
+  for(let k=used;k<pool.length;k++) pool[k].style.display='none';
+}
+
+/* ============================================================
+   PICKING (click in viewport)
+   ============================================================ */
+const raycaster=new THREE.Raycaster();
+function onPick(ev){
+  const rect=canvas.getBoundingClientRect();
+  const mx=((ev.clientX-rect.left)/rect.width)*2-1;
+  const my=-((ev.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(new THREE.Vector2(mx,my), camera);
+
+  // Try vertices first if markers visible
+  let bestVert=-1, bestDist=Infinity;
+  const camPos=camera.position;
+  state.verts.forEach((v,i)=>{
+    if(!['x','y','z'].every(f=>isFinite(v[f]))) return;
+    const p=new THREE.Vector3(v.x,v.y,v.z).applyAxisAngle(new THREE.Vector3(0,1,0),modelYaw);
+    const d=raycaster.ray.distanceToPoint(p);
+    if(d<0.12 && d<bestDist){ bestDist=d; bestVert=i; }
+  });
+  if(bestVert>=0){ selectVertex(bestVert); return; }
+
+  // else pick a triangle via ray-triangle test on drawn tris
+  let pickTri=-1, pickT=Infinity;
+  const ry=modelYaw;
+  state.tris.forEach((t,ti)=>{
+    if(!t.every(idx=>Number.isInteger(idx)&&idx>=0&&idx<state.verts.length)) return;
+    const a=rotPt(state.verts[t[0]],ry), b=rotPt(state.verts[t[1]],ry), c=rotPt(state.verts[t[2]],ry);
+    const hit=rayTri(raycaster.ray, a,b,c, flags.cull);
+    if(hit!==null && hit<pickT){ pickT=hit; pickTri=ti; }
+  });
+  if(pickTri>=0) selectTriangle(pickTri);
+}
+function rotPt(v,ry){ return new THREE.Vector3(v.x,v.y,v.z).applyAxisAngle(new THREE.Vector3(0,1,0),ry); }
+function rayTri(ray,a,b,c,cull){
+  const e1=new THREE.Vector3().subVectors(b,a);
+  const e2=new THREE.Vector3().subVectors(c,a);
+  const p=new THREE.Vector3().crossVectors(ray.direction,e2);
+  const det=e1.dot(p);
+  if(cull){ if(det<1e-7) return null; }
+  else if(Math.abs(det)<1e-9) return null;
+  const inv=1/det;
+  const tvec=new THREE.Vector3().subVectors(ray.origin,a);
+  const u=tvec.dot(p)*inv; if(u<0||u>1) return null;
+  const q=new THREE.Vector3().crossVectors(tvec,e1);
+  const vv=ray.direction.dot(q)*inv; if(vv<0||u+vv>1) return null;
+  const t=e2.dot(q)*inv; return t>1e-5?t:null;
+}
+
+/* ============================================================
+   TABLE RENDERING
+   ============================================================ */
+function renderVertexTable(){
+  const {of}=positionGroups();
+  // count occupancy per group to flag duplicates
+  const groupCount={};
+  of.forEach(g=>{ if(g>=0) groupCount[g]=(groupCount[g]||0)+1; });
+
+  const body=$('#vbody'); body.innerHTML='';
+  const refByTri = selTri>=0&&selTri<state.tris.length ? new Set(state.tris[selTri]) : new Set();
+
+  state.verts.forEach((v,i)=>{
+    const tr=document.createElement('tr');
+    if(i===selVert) tr.classList.add('sel');
+    else if(refByTri.has(i)) tr.classList.add('ref');
+    tr.dataset.i=i;
+    tr.addEventListener('mousedown',e=>{ if(e.target.tagName!=='INPUT'&&e.target.tagName!=='BUTTON') selectVertex(i); });
+
+    const dup = of[i]>=0 && groupCount[of[i]]>1;
+    const dupFlag = dup ? `<span class="dupflag" title="Shares this position with ${groupCount[of[i]]-1} other record(s). Editing here moves only this one unless 'Move all' is on.">⧉${groupCount[of[i]]}</span>` : '';
+
+    tr.innerHTML=`
+      <td class="idx">${i}${dup?' '+dupFlag:''}</td>
+      <td class="lbl"><input type="text" maxlength="3" value="${v.label??''}" data-f="label" aria-label="label for vertex ${i}"></td>
+      <td><input type="number" step="0.1" value="${fmt(v.x)}" data-f="x" aria-label="x for vertex ${i}"></td>
+      <td><input type="number" step="0.1" value="${fmt(v.y)}" data-f="y" aria-label="y for vertex ${i}"></td>
+      <td><input type="number" step="0.1" value="${fmt(v.z)}" data-f="z" aria-label="z for vertex ${i}"></td>
+      <td><input class="narrow" type="number" step="0.05" min="0" max="1" value="${fmt(v.r)}" data-f="r" aria-label="red for vertex ${i}"></td>
+      <td><input class="narrow" type="number" step="0.05" min="0" max="1" value="${fmt(v.g)}" data-f="g" aria-label="green for vertex ${i}"></td>
+      <td><input class="narrow" type="number" step="0.05" min="0" max="1" value="${fmt(v.b)}" data-f="b" aria-label="blue for vertex ${i}"></td>
+      <td><input class="swatch" type="color" value="${toHex(v.r,v.g,v.b)}" data-f="swatch" aria-label="colour picker for vertex ${i}"></td>
+      <td><button class="rowbtn" data-act="del" title="Remove vertex ${i}" aria-label="Remove vertex ${i}">✕</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  // wire inputs
+  body.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.addEventListener('change',onVertEdit);
+    if(inp.type==='color') inp.addEventListener('input',onVertEdit);
+  });
+  body.querySelectorAll('button[data-act=del]').forEach(b=>{
+    b.addEventListener('click',e=>{ const i=+e.target.closest('tr').dataset.i; removeVertex(i); });
+  });
+}
+
+function onVertEdit(e){
+  const tr=e.target.closest('tr'); const i=+tr.dataset.i;
+  const f=e.target.dataset.f;
+  pushUndo();
+  const v=state.verts[i];
+  if(f==='label'){ v.label=e.target.value.slice(0,3); rebuildAll(); return; }
+  if(f==='swatch'){
+    const [r,g,b]=fromHex(e.target.value);
+    applyColour(i,r,g,b); rebuildAll(); return;
+  }
+  const val=parseFloat(e.target.value);
+  if('xyz'.includes(f)){
+    // split-vertex handling
+    if(flags.moveAll){
+      const before={x:v.x,y:v.y,z:v.z};
+      const {groups}=positionGroups();
+      const grp=groups.find(g=>g.rows.includes(i));
+      const rows= grp?grp.rows:[i];
+      rows.forEach(r=>{ state.verts[r][f]=val; });
+    } else {
+      v[f]=val;
+    }
+  } else { // rgb
+    v[f]=val; // keep raw; validation flags out-of-range
+    // keep swatch roughly synced if in range
+  }
+  rebuildAll();
+}
+function applyColour(i,r,g,b){
+  const v=state.verts[i];
+  if(flags.moveAll){
+    // colour is not position; 'move all' only affects position — colour stays per-record
+  }
+  v.r=r;v.g=g;v.b=b;
+}
+
+function renderTriTable(){
+  const body=$('#tbody'); body.innerHTML='';
+  state.tris.forEach((t,ti)=>{
+    const tr=document.createElement('tr');
+    if(ti===selTri) tr.classList.add('sel');
+    tr.dataset.ti=ti;
+    tr.addEventListener('mousedown',e=>{ if(e.target.tagName!=='INPUT'&&e.target.tagName!=='BUTTON') selectTriangle(ti); });
+    tr.innerHTML=`
+      <td class="idx">${ti}</td>
+      <td><input class="narrow" type="number" step="1" value="${t[0]}" data-s="0" aria-label="index 0 of triangle ${ti}"></td>
+      <td><input class="narrow" type="number" step="1" value="${t[1]}" data-s="1" aria-label="index 1 of triangle ${ti}"></td>
+      <td><input class="narrow" type="number" step="1" value="${t[2]}" data-s="2" aria-label="index 2 of triangle ${ti}"></td>
+      <td><button class="rowbtn" data-act="del" title="Remove triangle ${ti}" aria-label="Remove triangle ${ti}">✕</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input[data-s]').forEach(inp=>inp.addEventListener('change',onTriEdit));
+  body.querySelectorAll('button[data-act=del]').forEach(b=>{
+    b.addEventListener('click',e=>{ const ti=+e.target.closest('tr').dataset.ti; removeTri(ti); });
+  });
+}
+function onTriEdit(e){
+  const tr=e.target.closest('tr'); const ti=+tr.dataset.ti; const s=+e.target.dataset.s;
+  pushUndo();
+  const val=parseInt(e.target.value,10);
+  state.tris[ti][s]=Number.isNaN(val)?e.target.value:val; // keep NaN visible via validation
+  if(Number.isNaN(val)) state.tris[ti][s]=NaN;
+  rebuildAll();
+}
+
+/* ---------- add / remove ---------- */
+function addVertex(){
+  pushUndo();
+  const last=state.verts[state.verts.length-1];
+  state.verts.push({label:'', x:0,y:0,z:0, r:0.8,g:0.8,b:0.8});
+  selVert=state.verts.length-1;
+  rebuildAll();
+}
+function removeVertex(i){
+  const refs=state.tris.filter(t=>t.includes(i)).length;
+  if(refs>0){
+    if(!confirm(`Vertex ${i} is used by ${refs} triangle(s).\n\nRemoving it will delete those triangles and renumber every index above ${i}. Continue?`)) return;
+  }
+  pushUndo();
+  // drop triangles referencing i, then renumber
+  state.tris = state.tris.filter(t=>!t.includes(i)).map(t=>t.map(idx=>{
+    if(typeof idx!=='number'||Number.isNaN(idx)) return idx;
+    return idx>i?idx-1:idx;
+  }));
+  state.verts.splice(i,1);
+  if(selVert===i) selVert=-1; else if(selVert>i) selVert--;
+  clampSelections();
+  rebuildAll();
+  toast(refs>0?`Removed vertex ${i} and ${refs} triangle(s); indices renumbered.`:`Removed vertex ${i}.`);
+}
+function addTri(){
+  pushUndo();
+  const n=state.verts.length;
+  state.tris.push([0, Math.min(1,n-1), Math.min(2,n-1)]);
+  selTri=state.tris.length-1;
+  rebuildAll();
+}
+function removeTri(ti){
+  pushUndo();
+  state.tris.splice(ti,1);
+  if(selTri===ti) selTri=-1; else if(selTri>ti) selTri--;
+  clampSelections();
+  rebuildAll();
+}
+
+/* ---------- selection ---------- */
+function selectVertex(i){
+  selVert=i; selTri=-1;
+  rebuildTablesSelection(); updateSelectionOverlays(); renderTriResolve();
+  $('#revWind').disabled=true;
+}
+function selectTriangle(ti){
+  selTri=ti; selVert=-1;
+  rebuildTablesSelection(); updateSelectionOverlays(); renderTriResolve();
+  $('#revWind').disabled=false;
+  if(flags.isolate) buildGeometry();
+}
+function rebuildTablesSelection(){
+  renderVertexTable(); renderTriTable();
+}
+
+function renderTriResolve(){
+  const el=$('#triResolve');
+  if(selTri<0||selTri>=state.tris.length){
+    el.innerHTML='Select a triangle to see how its indices resolve to vertices.';
+    return;
+  }
+  const t=state.tris[selTri];
+  const nameOf=idx=>{
+    if(!Number.isInteger(idx)||idx<0||idx>=state.verts.length) return `<span style="color:var(--warn)">bad</span>`;
+    const v=state.verts[idx]; return `<b>${v.label||('#'+idx)}</b>`;
+  };
+  el.innerHTML=`Triangle ${selTri} → indices [${t.map(x=>Number.isNaN(x)?'?':x).join(', ')}] → vertices ${nameOf(t[0])}, ${nameOf(t[1])}, ${nameOf(t[2])}.
+    <div class="hint">Anticlockwise from the front = visible. Front faces are kept; back faces are culled${flags.cull?'':' (currently disabled)'}.</div>`;
+}
+
+/* ---------- reverse winding ---------- */
+function reverseWinding(){
+  if(selTri<0) return;
+  pushUndo();
+  const t=state.tris[selTri];
+  [t[1],t[2]]=[t[2],t[1]];
+  rebuildAll();
+  toast(`Triangle ${selTri} winding reversed (swapped i1 and i2).`);
+}
+
+/* ============================================================
+   COUNTS + C++
+   ============================================================ */
+function renderCounts(){
+  const nv=state.verts.length;
+  const up=uniquePositionCount();
+  const nt=state.tris.length;
+  const ni=nt*3;
+  $('#counts').innerHTML=`
+    <div><span class="k">Vertex records</span> <b>${nv}</b></div>
+    <div><span class="k">Unique positions</span> <b>${up}</b></div>
+    <div><span class="k">Triangles</span> <b>${nt}</b></div>
+    <div><span class="k">Indices</span> <b>${ni}</b></div>
+    ${nv!==up?`<div style="margin-top:4px;color:#9fb0c4">${up} corner positions · ${nv} records</div>`:''}
+  `;
+}
+
+function renderCpp(){
+  const esc=s=>s;
+  const vLines=state.verts.map((v,i)=>{
+    const nums=[v.x,v.y,v.z,v.r,v.g,v.b].map(n=>{
+      const s=fmt(n); return `<span class="num">${s}${(/[.eE]/.test(s)||!isFinite(n))?'f':'.0f'}</span>`;
+    }).join(', ');
+    const lbl=v.label?`  <span class="cm">// ${i}: ${v.label}</span>`:`  <span class="cm">// ${i}</span>`;
+    return `    { ${nums} },${lbl}`;
+  }).join('\n');
+
+  const iChunks=state.tris.map((t,ti)=>{
+    const vals=t.map(x=>`<span class="num">${Number.isNaN(x)?'?':x}</span>`).join(', ');
+    return `    ${vals},  <span class="cm">// tri ${ti}</span>`;
+  }).join('\n');
+
+  const html=
+`<span class="kw">struct</span> <span class="ty">ptVertex</span> { <span class="kw">float</span> <span class="nm">x, y, z</span>; <span class="kw">float</span> <span class="nm">r, g, b</span>; };
+
+<span class="kw">static const</span> <span class="ty">ptVertex</span> <span class="nm">sc_VertexData</span>[] = {
+${vLines}
+};
+
+<span class="kw">static const</span> <span class="ty">uint16_t</span> <span class="nm">sc_IndexData</span>[] = {
+${iChunks}
+};`;
+  $('#cppOut').innerHTML=html;
+  renderCpp._plain = plainCpp();
+}
+function plainCpp(){
+  const num=n=>{ const s=fmt(n); return s+((/[.eE]/.test(s)||!isFinite(n))?'f':'.0f'); };
+  let out='struct ptVertex { float x, y, z; float r, g, b; };\n\n';
+  out+='static const ptVertex sc_VertexData[] = {\n';
+  state.verts.forEach((v,i)=>{ out+=`    { ${[v.x,v.y,v.z,v.r,v.g,v.b].map(num).join(', ')} },  // ${i}${v.label?': '+v.label:''}\n`; });
+  out+='};\n\nstatic const uint16_t sc_IndexData[] = {\n';
+  state.tris.forEach((t,ti)=>{ out+=`    ${t.map(x=>Number.isNaN(x)?'0':x).join(', ')},  // tri ${ti}\n`; });
+  out+='};\n';
+  return out;
+}
+
+/* ============================================================
+   VALIDATION PAINTING + STATUS
+   ============================================================ */
+function paintValidation(v){
+  // vertices
+  document.querySelectorAll('#vbody tr').forEach(tr=>{
+    const i=+tr.dataset.i; const bad=v.vertErrors.get(i);
+    tr.classList.toggle('warn-row', !!bad);
+    tr.querySelectorAll('input[data-f]').forEach(inp=>{
+      const f=inp.dataset.f;
+      inp.classList.toggle('bad', !!(bad&&bad.has(f)));
+    });
+  });
+  // triangles
+  document.querySelectorAll('#tbody tr').forEach(tr=>{
+    const ti=+tr.dataset.ti; const e=v.triErrors.get(ti);
+    tr.classList.toggle('warn-row', !!e);
+    tr.title = e? (e.warn||'Invalid index') : '';
+    tr.querySelectorAll('input[data-s]').forEach(inp=>{
+      const s=+inp.dataset.s;
+      inp.classList.toggle('bad', !!(e&&e.slots&&e.slots.has(s)));
+    });
+  });
+}
+function showStatus(msg, stale){
+  const el=$('#vpStatus'); el.textContent=(stale?'⚠ ':'')+msg+(stale?'  — viewport shows the last valid data.':'');
+  el.classList.add('show'); el.classList.toggle('stale',!!stale);
+}
+function hideStatus(){ const el=$('#vpStatus'); el.classList.remove('show'); }
+
+/* ============================================================
+   VIEW CONTROLS
+   ============================================================ */
+function fitModel(){
+  const finite=state.verts.filter(v=>['x','y','z'].every(f=>isFinite(v[f])));
+  if(!finite.length){ return; }
+  const box=new THREE.Box3();
+  finite.forEach(v=>box.expandByPoint(new THREE.Vector3(v.x,v.y,v.z)));
+  const c=box.getCenter(new THREE.Vector3());
+  const size=box.getSize(new THREE.Vector3());
+  const radius=Math.max(size.x,size.y,size.z,1)*0.9+0.5;
+  controls.target.copy(c);
+  const dir=new THREE.Vector3(1,0.7,1.2).normalize();
+  camera.position.copy(c).add(dir.multiplyScalar(radius*2.2));
+  camera.near=Math.max(0.01,radius*0.05); camera.far=radius*50; camera.updateProjectionMatrix();
+  camera.lookAt(c);
+  controls.sync();
+  controls.update();
+}
+function frontView(){
+  // A true front view: model unrotated, camera straight down +Z, +Y up.
+  modelYaw=0; applyYaw();
+  const finite=state.verts.filter(v=>['x','y','z'].every(f=>isFinite(v[f])));
+  const box=new THREE.Box3();
+  if(finite.length) finite.forEach(v=>box.expandByPoint(new THREE.Vector3(v.x,v.y,v.z)));
+  const c=finite.length?box.getCenter(new THREE.Vector3()):new THREE.Vector3();
+  const size=finite.length?box.getSize(new THREE.Vector3()):new THREE.Vector3(2,2,2);
+  const radius=Math.max(size.x,size.y,size.z,1);
+  camera.up.set(0,1,0);
+  controls.target.copy(c);
+  camera.position.set(c.x, c.y, c.z + radius*3.2);
+  camera.near=Math.max(0.01,radius*0.05); camera.far=radius*50; camera.updateProjectionMatrix();
+  camera.lookAt(c);
+  controls.sync();          // re-derive orbit state from the new pose
+  controls.update();
+}
+function resetView(){
+  modelYaw=0; applyYaw();
+  fitModel();
+}
+
+/* ============================================================
+   OrbitControls (minimal, self-contained)
+   — enough for orbit / zoom / pan without extra CDN files
+   ============================================================ */
+function OrbitControls(cam, dom){
+  this.object=cam; this.domElement=dom;
+  this.target=new THREE.Vector3();
+  this.enableDamping=true; this.dampingFactor=0.12;
+  let scope=this;
+  let sph=new THREE.Spherical(); let sphDelta=new THREE.Spherical();
+  let panOffset=new THREE.Vector3();
+  let scale=1;
+  let rotating=false,panning=false; let sx=0,sy=0;
+
+  function updateSph(){
+    const off=new THREE.Vector3().subVectors(scope.object.position,scope.target);
+    sph.setFromVector3(off);
+  }
+  updateSph();
+
+  this.update=function(){
+    const off=new THREE.Vector3().subVectors(scope.object.position,scope.target);
+    sph.setFromVector3(off);
+    sph.theta+=sphDelta.theta; sph.phi+=sphDelta.phi;
+    sph.phi=Math.max(0.001,Math.min(Math.PI-0.001,sph.phi));
+    sph.radius*=scale;
+    sph.radius=Math.max(0.05,Math.min(500,sph.radius));
+    scope.target.add(panOffset);
+    off.setFromSpherical(sph);
+    scope.object.position.copy(scope.target).add(off);
+    scope.object.lookAt(scope.target);
+    if(scope.enableDamping){ sphDelta.theta*=(1-scope.dampingFactor); sphDelta.phi*=(1-scope.dampingFactor); panOffset.multiplyScalar(1-scope.dampingFactor); }
+    else { sphDelta.set(0,0,0); panOffset.set(0,0,0); }
+    scale=1;
+  };
+
+  // Snap internal state to the camera's current pose and drop any pending
+  // rotate/pan/zoom deltas — used after programmatic view changes so damping
+  // doesn't drag the camera off-axis on the next frame.
+  this.sync=function(){
+    sphDelta.set(0,0,0); panOffset.set(0,0,0); scale=1;
+    const off=new THREE.Vector3().subVectors(scope.object.position,scope.target);
+    sph.setFromVector3(off);
+  };
+
+  function onDown(e){
+    if(e.button===0 && !e.shiftKey){ rotating=true; }
+    else { panning=true; }
+    sx=e.clientX; sy=e.clientY;
+    dom.setPointerCapture&&dom.setPointerCapture(e.pointerId);
+  }
+  function onMove(e){
+    if(rotating){
+      const dx=(e.clientX-sx)/dom.clientHeight, dy=(e.clientY-sy)/dom.clientHeight;
+      sphDelta.theta-=2*Math.PI*dx; sphDelta.phi-=2*Math.PI*dy;
+      sx=e.clientX; sy=e.clientY;
+    } else if(panning){
+      const dx=(e.clientX-sx), dy=(e.clientY-sy);
+      const off=new THREE.Vector3().subVectors(scope.object.position,scope.target);
+      const dist=off.length()*Math.tan((scope.object.fov/2)*Math.PI/180);
+      const panX=new THREE.Vector3().setFromMatrixColumn(scope.object.matrix,0).multiplyScalar(-2*dx*dist/dom.clientHeight);
+      const panY=new THREE.Vector3().setFromMatrixColumn(scope.object.matrix,1).multiplyScalar( 2*dy*dist/dom.clientHeight);
+      panOffset.add(panX).add(panY);
+      sx=e.clientX; sy=e.clientY;
+    }
+  }
+  function onUp(e){ rotating=false; panning=false; }
+  function onWheel(e){ e.preventDefault(); scale*= (e.deltaY>0?1.08:0.925); }
+
+  dom.addEventListener('pointerdown',onDown);
+  dom.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
+  dom.addEventListener('wheel',onWheel,{passive:false});
+  dom.addEventListener('contextmenu',e=>e.preventDefault());
+}
+
+/* ============================================================
+   REBUILD PIPELINE
+   ============================================================ */
+function rebuildAll(){
+  renderVertexTable();
+  renderTriTable();
+  rebuildMarkers();
+  buildGeometry();
+  renderTriResolve();
+  $('#revWind').disabled = selTri<0;
+}
+
+/* ============================================================
+   GUIDED EXPERIMENTS
+   ============================================================ */
+const EXPERIMENTS=[
+  {t:'Move one corner', d:'Nudge a vertex position and watch which triangles distort. Every triangle listing that index moves with it.',
+   act:()=>{ ensurePreset('cubeShared'); selectVertex(3); toast('Vertex 3 selected — edit its X/Y/Z on the left.'); }},
+  {t:'Change one index', d:'Point one index at a different vertex. The triangle re-connects — same slot, new corner.',
+   act:()=>{ ensurePreset('cubeShared'); selectTriangle(0); toast('Triangle 0 selected — change i2 on the right and watch it snap to a new vertex.'); }},
+  {t:'Reverse a winding', d:'Reverse a triangle and it vanishes from this side: its front face now points away and is culled.',
+   act:()=>{ ensurePreset('cubeShared'); selectTriangle(0); toast('Triangle 0 selected — press “Reverse winding”.'); }},
+  {t:'Disable culling & compare', d:'Turn culling off to see both faces. The reversed triangle reappears — nothing was deleted, only hidden.',
+   act:()=>{ setToggle('cull',false); toast('Culling off. Compare with it on again.'); }},
+  {t:'Change one vertex colour', d:'On the shared cube, change one corner’s colour and watch it blend across each triangle it touches.',
+   act:()=>{ ensurePreset('cubeShared'); selectVertex(0); toast('Vertex 0 selected — change its R/G/B or use the swatch.'); }},
+  {t:'Make a whole face rich purple', d:'Colour a complete face one flat colour. On the shared cube you can’t — corners are shared. Use the per-face cube.',
+   act:()=>{ ensurePreset('cubeFaces'); selectTriangle(0); toast('Per-face cube — the front face uses records 0–3. Set each to a purple, e.g. 0.6, 0.2, 0.8.'); }},
+  {t:'Compare 8-record vs 24-record cube', d:'Same 8 positions, different record counts. Flip between the two presets and watch the counts panel.',
+   act:()=>{ ensurePreset('cubeShared'); toast('Now switch the preset to the 24-record per-face cube and compare the counts.'); }},
+  {t:'Split-vertex gap', d:'On the per-face cube, move one record of a shared corner and a gap opens. Undo, enable “Move all”, move again.',
+   act:()=>{ ensurePreset('cubeFaces'); const i=findSharedRecord(); selectVertex(i); flags.moveAll=false; syncToggleUI(); toast(`Vertex ${i} selected — move it and watch one face tear away. Then undo and turn on “Move all”.`); }},
+  {t:'Explore the hollow tube', d:'Culling removes back faces, so a single-sided wall would be invisible from inside. Each side here has its outward triangle plus a reversed twin whose front face points inward — so whichever side you look from, some triangle faces you. Culling stays on the whole time. Orbit through the open ends.',
+   act:()=>{ ensurePreset('tube'); toast('Hollow tube loaded. Orbit through the open ends — the reversed twins paint the interior.'); }},
+  {t:'Build a pyramid from scratch', d:'The apex is placed for you — the rest is yours. A square-based pyramid has 5 positions: four base corners plus the apex on top. (1) With <b>+ Vertex</b>, add four base corners, e.g. (±1, 0, ±1), giving each its own colour. (2) With <b>+ Triangle</b>, add the four sloping sides, each joining two neighbouring base corners to the apex. (3) Close the bottom with two more triangles across the base — six triangles in all. (4) Check every face from outside: any that vanish are wound backwards, so select them and press <b>Reverse winding</b>. Watch the counts as you go: 5 records, 18 indices, 6 triangles when it’s done.',
+   act:()=>{ startExercise(buildPyramidStart); toast('Blank canvas — only the apex is placed. Add four base corners, then the triangles. Markers + labels are on so you can see your work.'); }},
+];
+function renderExperiments(){
+  const ol=$('#expList'); ol.innerHTML='';
+  EXPERIMENTS.forEach((e,i)=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="n">${i+1}</span>
+      <div class="txt"><p><b>${e.t}.</b> ${e.d}</p></div>
+      <button class="btn small go">Set up</button>`;
+    li.querySelector('.go').addEventListener('click',e.act);
+    ol.appendChild(li);
+  });
+}
+function ensurePreset(key){
+  if($('#presetSel').value!==key){ $('#presetSel').value=key; loadPreset(key,false); }
+}
+function findSharedRecord(){
+  // find a record whose position is shared by others (per-face cube corner)
+  const {groups}=positionGroups();
+  const g=groups.find(gr=>gr.rows.length>1);
+  return g?g.rows[0]:0;
+}
+
+/* ============================================================
+   TOGGLE WIRING
+   ============================================================ */
+function bindToggle(id, key, onChange){
+  const el=$('#'+id); const inp=el.querySelector('input');
+  inp.checked=flags[key];
+  el.classList.toggle('on',flags[key]);
+  const handler=()=>{ flags[key]=inp.checked; el.classList.toggle('on',inp.checked); onChange&&onChange(); };
+  inp.addEventListener('change',handler);
+  return {el,inp};
+}
+function setToggle(key,val){
+  flags[key]=val; syncToggleUI();
+  applyToggleEffect(key);
+}
+function applyToggleEffect(key){
+  if(key==='cull'){ solidMesh.material.side=flags.cull?THREE.FrontSide:THREE.DoubleSide; renderTriResolve(); buildGeometry(); }
+  else if(key==='wire'){ wireMesh.visible=flags.wire; buildGeometry(); }
+  else if(key==='axes'){ axesGroup.visible=flags.axes; }
+  else if(key==='markers'||key==='labels'){ rebuildMarkers(); }
+  else if(key==='isolate'){ buildGeometry(); }
+}
+function syncToggleUI(){
+  const map={tgCull:'cull',tgAxes:'axes',tgMarkers:'markers',tgLabels:'labels',tgWire:'wire',tgRotate:'rotate',tgMoveAll:'moveAll',tgIsolate:'isolate'};
+  Object.entries(map).forEach(([id,key])=>{
+    const el=$('#'+id); if(!el)return; const inp=el.querySelector('input');
+    inp.checked=flags[key]; el.classList.toggle('on',flags[key]);
+  });
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  initThree();
+  renderExperiments();
+
+  // toolbar
+  $('#presetSel').addEventListener('change',e=>loadPreset(e.target.value,false));
+  $('#reloadPreset').addEventListener('click',()=>loadPreset($('#presetSel').value,false));
+  $('#addVertex').addEventListener('click',addVertex);
+  $('#addTri').addEventListener('click',addTri);
+  $('#revWind').addEventListener('click',reverseWinding);
+  $('#undoBtn').addEventListener('click',undo);
+  $('#redoBtn').addEventListener('click',redo);
+
+  // view buttons
+  $('#btnFront').addEventListener('click',frontView);
+  $('#btnReset').addEventListener('click',resetView);
+  $('#btnFit').addEventListener('click',fitModel);
+
+  // toggles
+  bindToggle('tgCull','cull',()=>applyToggleEffect('cull'));
+  bindToggle('tgAxes','axes',()=>applyToggleEffect('axes'));
+  bindToggle('tgMarkers','markers',()=>applyToggleEffect('markers'));
+  bindToggle('tgLabels','labels',()=>{});
+  bindToggle('tgWire','wire',()=>applyToggleEffect('wire'));
+  bindToggle('tgRotate','rotate',()=>{});
+  bindToggle('tgMoveAll','moveAll',()=>{});
+  bindToggle('tgIsolate','isolate',()=>applyToggleEffect('isolate'));
+
+  // copy C++
+  $('#copyCpp').addEventListener('click',()=>{
+    const txt=renderCpp._plain||plainCpp();
+    navigator.clipboard.writeText(txt).then(()=>toast('C++ copied to clipboard.'),()=>toast('Copy failed — select and copy manually.'));
+  });
+
+  // keyboard undo/redo
+  window.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); }
+    else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
+  });
+
+  // first preset
+  $('#presetSel').value='cubeShared';
+  loadPreset('cubeShared',false);
+
+  // ensure sizing after layout settles
+  setTimeout(resize,50);
+  setTimeout(fitModel,60);
+}
+
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
